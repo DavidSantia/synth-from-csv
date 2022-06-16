@@ -25,6 +25,7 @@ This project is distributed under the [Apache 2 license](LICENSE).
 Required:
 
 - User must have permissions for Synthetics Manager to create monitors
+- Add your NR1 account Id to `nerdlets/synth-csv-app/index.js`
 
 Execute the following command to clone this repository and run the code locally against your New Relic data:
 
