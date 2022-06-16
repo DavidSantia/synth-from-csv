@@ -19,7 +19,6 @@ export default class Generate extends React.Component {
       }
     }
     this.state = {
-      credentials: {},
       locales: {},
       locationMap: locationMap,
       status2frequency: {},
@@ -88,13 +87,6 @@ export default class Generate extends React.Component {
       headings = records[0];
     }
 
-    // load credentials from NerdStorage
-    AccountStorageQuery.query({accountId: accountId, collection: 'credentials', documentId: 'current'})
-      .then(({data}) => {
-        if (data) {
-          this.setState({credentials: data})
-        }
-      });
     // load locale map from NerdStorage
     AccountStorageQuery.query({accountId: accountId, collection: 'locale2locations', documentId: 'current'})
       .then(({data}) => {
@@ -154,10 +146,6 @@ export default class Generate extends React.Component {
   makeMonitors(objs) {
     const {credentials} = this.state;
     var requests = [];
-    const headers = {
-      'API-Key': credentials.apiKey,
-      'Content-Type': 'application/json',
-    }
     for (const obj of objs) {
       console.log('Executing GraphQl mutation to create monitor', obj.name);
       this.doGraphQl(obj);
@@ -168,12 +156,7 @@ export default class Generate extends React.Component {
     var table = <h1>No data</h1>;
 
     if (objs && objs.length > 0) {
-      const {credentials} = this.state;
       var issues = [];
-
-      if (!credentials.apiKey || credentials.apiKey === 'Enter key') {
-        issues.push({location: 'Settings', description: 'API Key not configured - please update Settings'});
-      }
       for (const text of configErrors) {
         issues.push({location: 'Spreadsheet headings', description: text})
       }
