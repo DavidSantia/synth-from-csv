@@ -1,6 +1,6 @@
 {
-  "schemaType": "NERDPACK",
-  "id": "",
-  "displayName": "{{NERDPACK_NAME}}",
-  "description": "My new nerdpack"
+    "schemaType": "NERDPACK",
+    "id": "eab4959d-12ce-4e30-8e11-54678b198718",
+    "displayName": "SynthFromCsv",
+    "description": "Nerdpack synth-from-csv"
 }

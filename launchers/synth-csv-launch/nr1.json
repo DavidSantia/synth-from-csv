@@ -1,0 +1,7 @@
+{
+  "schemaType": "LAUNCHER",
+  "id": "synth-csv-launch",
+  "displayName": "SynthCsvLaunch",
+  "description": "Describe me",
+  "rootNerdletId": "eab4959d-12ce-4e30-8e11-54678b198718.synth-csv-app"
+}
