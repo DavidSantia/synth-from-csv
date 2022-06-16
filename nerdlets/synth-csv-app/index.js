@@ -7,7 +7,7 @@ import ConfigFrequency from "./config-frequency";
 import ConfigTags from "./config-tags";
 import Generate from "./generate";
 
-const AccountId = 2255223;
+const AccountId = YOUR_ACCOUNT_ID_HERE;
 
 // Generate bulk Synthetics monitors from CSV configuration
 export default class SynthCsvAppNerdlet extends React.Component {
