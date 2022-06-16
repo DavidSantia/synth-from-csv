@@ -14,7 +14,7 @@ This application uses a CSV file containing a locale, url, status, name, and add
 
 It does error checking to make sure the required fields can be parsed from the CSV, as well as make sure they have been specified in each row to properly generate the GraphQl mutation for creating the monitor.
 
-![Settings Tab](screenshots/settings-tab.png)
+![Settings Tab](screenshots/settings_tab.png)
 
 ## Open source license
 
