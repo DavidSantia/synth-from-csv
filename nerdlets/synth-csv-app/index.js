@@ -103,7 +103,7 @@ export default class SynthCsvAppNerdlet extends React.Component {
           <ConfigTags accountId={AccountId} headings={headings} update={() => this.setState({update: true})}/>
           <br />
           <h1>Locale Map</h1>
-          <AccountStorageQuery accountId={2255223} collection="locale2locations" documentId="current">
+          <AccountStorageQuery accountId={AccountId} collection="locale2locations" documentId="current">
             {({ loading, error, data }) => {
               if (loading) {
                 return <Spinner />;
@@ -115,7 +115,7 @@ export default class SynthCsvAppNerdlet extends React.Component {
             }}
           </AccountStorageQuery>
           <h1>Account Status Map</h1>
-          <AccountStorageQuery accountId={2255223} collection="status2frequency" documentId="current">
+          <AccountStorageQuery accountId={AccountId} collection="status2frequency" documentId="current">
             {({ loading, error, data }) => {
               if (loading) {
                 return <Spinner />;
@@ -127,7 +127,7 @@ export default class SynthCsvAppNerdlet extends React.Component {
             }}
           </AccountStorageQuery>
           <h1>Tag Map</h1>
-          <AccountStorageQuery accountId={2255223} collection="tagmap" documentId="current">
+          <AccountStorageQuery accountId={AccountId} collection="tagmap" documentId="current">
             {({ loading, error, data }) => {
               if (loading) {
                 return <Spinner />;
