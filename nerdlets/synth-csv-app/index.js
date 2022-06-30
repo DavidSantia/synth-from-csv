@@ -1,5 +1,5 @@
 import React from 'react';
-import { AccountStorageQuery, Button, Spinner, Tabs, TabsItem } from 'nr1';
+import { AccountStorageQuery, Button, Spinner, Tabs, TabsItem, UserQuery } from 'nr1';
 import { FilePicker } from 'react-file-picker';
 import { parse } from 'csv-parse';
 import ConfigLocale from './config-locale';
@@ -18,7 +18,13 @@ export default class SynthCsvAppNerdlet extends React.Component {
       fileName: null,
       records: [],
       update: false,
+      email: null
     };
+  }
+
+  componentDidMount() {
+    // Lookup user accessing this nerdpack
+    UserQuery.query().then(({ data }) => this.setState({email: data.email}));
   }
 
   fileParse(selectedFile) {
@@ -75,10 +81,19 @@ export default class SynthCsvAppNerdlet extends React.Component {
   }
 
   render() {
-    const {records, fileName} = this.state;
+    const {records, fileName, email} = this.state;
     var headings = [];
     if (records.length > 0) {
       headings = records[0];
+    }
+
+    var settingsButtons;
+    if (email && (email === 'sung@salesforce.com' || email.includes('@newrelic.com'))) {
+      settingsButtons = (<div>
+        <ConfigLocale accountId={AccountId} update={() => this.setState({update: true})}/>
+        <ConfigFrequency accountId={AccountId} update={() => this.setState({update: true})}/>
+        <ConfigTags accountId={AccountId} headings={headings} update={() => this.setState({update: true})}/>
+      </div>);
     }
 
     return (
@@ -98,9 +113,7 @@ export default class SynthCsvAppNerdlet extends React.Component {
           {this.makeTable(records)}
         </TabsItem>
         <TabsItem value="tab2" label="Settings">
-          <ConfigLocale accountId={AccountId} update={() => this.setState({update: true})}/>
-          <ConfigFrequency accountId={AccountId} update={() => this.setState({update: true})}/>
-          <ConfigTags accountId={AccountId} headings={headings} update={() => this.setState({update: true})}/>
+          {settingsButtons}
           <br />
           <h1>Locale Map</h1>
           <AccountStorageQuery accountId={AccountId} collection="locale2locations" documentId="current">
