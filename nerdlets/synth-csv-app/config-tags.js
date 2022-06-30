@@ -31,7 +31,10 @@ export default class ConfigTags extends React.Component {
     // load tag list from NerdStorage
     AccountStorageQuery.query({accountId: accountId, collection: 'tagmap', documentId: 'current'})
       .then(({data}) => {
-        if (data && headings.length > 0) {
+        if (!data) {
+          data = {};
+        }
+        if (headings.length > 0) {
           // aggregate list of all headings
           var tagMap = Object.assign({}, data);
           for (const heading of headings) {

@@ -60,14 +60,15 @@ export default class ConfigFrequency extends React.Component {
     // load frequency map from NerdStorage
     AccountStorageQuery.query({accountId: this.props.accountId, collection: 'status2frequency', documentId: 'current'})
       .then(({data}) => {
-        if (data) {
-          var statuses = {};
-          if (Object.keys(data).length > 0) {
-            for (const [label, value] of Object.entries(data)) {
-              statuses[label] = this.name2freq[value]
-            }
-            this.setState({statuses});
+        if (!data) {
+          data = {}
+        }
+        var statuses = {};
+        if (Object.keys(data).length > 0) {
+          for (const [label, value] of Object.entries(data)) {
+            statuses[label] = this.name2freq[value]
           }
+          this.setState({statuses});
         }
       });
   }
@@ -130,7 +131,8 @@ export default class ConfigFrequency extends React.Component {
             <CardBody>
               <Select label={item[0]} value={toUpdate[item[0]] ? toUpdate[item[0]] : item[1]}
                       onChange={(event, value) => this.onSelectFrequency(item[0], value)}>
-                {Object.entries(this.name2freq).map(entry => <SelectItem value={parseInt(entry[1])}>{entry[0]}</SelectItem>)}
+                {Object.entries(this.name2freq).map(entry => <SelectItem
+                  value={parseInt(entry[1])}>{entry[0]}</SelectItem>)}
               </Select>
             </CardBody>
           </Card>)}

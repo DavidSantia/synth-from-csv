@@ -1,6 +1,18 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import {AccountStorageQuery, AccountStorageMutation, Button, Card, CardBody, Checkbox, CheckboxGroup, Dropdown, DropdownItem, HeadingText, Modal, Spinner} from 'nr1';
+import {
+  AccountStorageMutation,
+  AccountStorageQuery,
+  Button,
+  Card,
+  CardBody,
+  Checkbox,
+  CheckboxGroup,
+  Dropdown,
+  DropdownItem,
+  HeadingText,
+  Modal
+} from 'nr1';
 import countries from './countries';
 import locations from './locations';
 
@@ -10,6 +22,7 @@ export default class ConfigLocale extends React.Component {
     accountId: PropTypes.number.isRequired,
     update: PropTypes.func.isRequired,
   }
+
   constructor(props) {
     super(props);
     var locationList = [];
@@ -36,24 +49,25 @@ export default class ConfigLocale extends React.Component {
     // load locale map from NerdStorage
     AccountStorageQuery.query({accountId: this.props.accountId, collection: 'locale2locations', documentId: 'current'})
       .then(({data}) => {
-        if (data) {
-          const locs = data[this.state.code];
-          var checkboxes = [];
-          if (locs) {
-            // Load previous checkbox settings
-            for (const item of locationList) {
-              if (locs.includes(item.label)) {
-                checkboxes.push(item.idx)
-              }
+        if (!data) {
+          data = {}
+        }
+        const locs = data[this.state.code];
+        var checkboxes = [];
+        if (locs) {
+          // Load previous checkbox settings
+          for (const item of locationList) {
+            if (locs.includes(item.label)) {
+              checkboxes.push(item.idx)
             }
           }
-          this.setState({locales: data, checkboxes})
         }
+        this.setState({locales: data, checkboxes})
       });
   }
 
   onCheckbox(event, values) {
-    this.setState({ checkboxes: values });
+    this.setState({checkboxes: values});
   }
 
   onSelectCountry(country) {
@@ -96,7 +110,7 @@ export default class ConfigLocale extends React.Component {
         }
       }
     }
-    this.setState({ hidden: true, toUpdate: {}, checkboxes});
+    this.setState({hidden: true, toUpdate: {}, checkboxes});
   }
 
   onUpdate() {
@@ -137,9 +151,9 @@ export default class ConfigLocale extends React.Component {
   render() {
     const {checkboxes, code, hidden, name} = this.state;
 
-    return(
+    return (
       <div>
-        <Button onClick={() => this.setState({ hidden: false })}>
+        <Button onClick={() => this.setState({hidden: false})}>
           Configure Locations
         </Button>
         <Modal hidden={hidden} onClose={this.onCancel}>
