@@ -20,12 +20,43 @@ export default class ConfigTags extends React.Component {
     this.onUpdate = this.onUpdate.bind(this);
   }
 
+  camelize(str) {
+    return str.toLowerCase().replace(/(?:^\w|[A-Z]|\b\w)/g, function(word, index) {
+      return index === 0 ? word.toLowerCase() : word.toUpperCase();
+    }).replace(/\s+/g, '');
+  }
+
   componentDidMount() {
+    const {headings, accountId} = this.props;
     // load tag list from NerdStorage
-    AccountStorageQuery.query({accountId: this.props.accountId, collection: 'tagmap', documentId: 'current'})
+    AccountStorageQuery.query({accountId: accountId, collection: 'tagmap', documentId: 'current'})
       .then(({data}) => {
-        if (data) {
-          this.setState({tagMap: data})
+        if (data && headings.length > 0) {
+          // aggregate list of all headings
+          var tagMap = Object.assign({}, data);
+          for (const heading of headings) {
+            const key = this.camelize(heading);
+            if (!tagMap[key]) {
+              tagMap[key] = {enabled: false, heading: heading}
+            }
+          }
+          // save aggregated list
+          AccountStorageMutation.mutate({
+            accountId: accountId,
+            actionType: AccountStorageMutation.ACTION_TYPE.WRITE_DOCUMENT,
+            collection: 'tagmap',
+            documentId: 'current',
+            document: tagMap,
+          }).then(() => {
+            // initialize checkboxes
+            var checkboxes = [];
+            for (const [idx, key] of Object.entries(Object.keys(tagMap))) {
+              if (tagMap[key].enabled) {
+                checkboxes.push(idx)
+              }
+            }
+            this.setState({tagMap, checkboxes});
+          });
         }
       });
   }
@@ -35,63 +66,62 @@ export default class ConfigTags extends React.Component {
   }
 
   onCancel() {
-    // clear checkbox settings, make no changes
-    this.setState({ hidden: true, toUpdate: {}, checkboxes: []});
-  }
-
-  camelize(str) {
-    return str.replace(/(?:^\w|[A-Z]|\b\w)/g, function(word, index) {
-      return index === 0 ? word.toLowerCase() : word.toUpperCase();
-    }).replace(/\s+/g, '');
+    // reset checkbox settings, make no changes
+    const {tagMap} = this.state;
+    var checkboxes = [];
+    for (const [idx, key] of Object.entries(Object.keys(tagMap))) {
+      if (tagMap[key].enabled) {
+        checkboxes.push(idx)
+      }
+    }
+    this.setState({ hidden: true, checkboxes});
   }
 
   onUpdate() {
-    const {headings} = this.props;
+    const {headings, accountId} = this.props;
+    const {checkboxes} = this.state;
     if (headings.length === 0) {
       this.setState({hidden: true});
       return
     }
 
     // save updated settings to tagMap object
-    const current = Object.keys(this.state.tagMap);
     var tagMap = Object.assign({}, this.state.tagMap);
-    for (const idx of this.state.checkboxes) {
-      const key = this.camelize(headings[idx]);
-      if (!current.includes(key)) {
-        tagMap[key] = headings[idx];
-      }
+    const current = Object.keys(tagMap);
+    // clear all enables
+    for (const key of current) {
+      tagMap[key].enabled = false;
+    }
+    // enable for checkbox list
+    for (const idx of checkboxes) {
+      tagMap[current[idx]].enabled = true;
     }
 
     // persist with NerdStorage
     AccountStorageMutation.mutate({
-      accountId: this.props.accountId,
+      accountId: accountId,
       actionType: AccountStorageMutation.ACTION_TYPE.WRITE_DOCUMENT,
       collection: 'tagmap',
       documentId: 'current',
       document: tagMap,
     }).then(function () {
-      console.log('Wrote AccountStorage:', Object.keys(tagMap).length, 'tags mapped');
+      console.log('Wrote AccountStorage:', checkboxes.length, 'tags mapped,', Object.keys(tagMap).length, 'headings total');
     });
-    this.setState({hidden: true, tagMap, checkboxes: []});
+    this.setState({hidden: true, tagMap});
     // refresh settings tab
     this.props.update();
   }
 
   render() {
     const {headings} = this.props;
-    const values = Object.values(this.state.tagMap);
-
-    var current = <p><i>None selected</i></p>;
-    if (values.length > 0) {
-      current = <ul>{Object.values(this.state.tagMap).map(value => <li>{value}</li>)}</ul>
-    }
+    const {tagMap, checkboxes} = this.state;
 
     var body = <HeadingText spacingType={[HeadingText.SPACING_TYPE.LARGE]} type={HeadingText.TYPE.HEADING_3}>
         Please load a spreadsheet first
       </HeadingText>;
     if (headings.length > 0) {
-      body = <CheckboxGroup value={this.state.checkboxes} onChange={this.onCheckbox} label="Additional headings">
-        {headings.map((heading, idx) => <Checkbox value={idx.toString()} label={heading}/>)}
+      body = <CheckboxGroup value={checkboxes} onChange={this.onCheckbox} label="Available Headings">
+        {Object.values(tagMap).map((item, idx) => <Checkbox value={idx.toString()} label={item.heading}/>)}
       </CheckboxGroup>;
     }
 
@@ -101,13 +131,7 @@ export default class ConfigTags extends React.Component {
           Configure Tags
         </Button>
         <Modal hidden={this.state.hidden} onClose={this.onCancel}>
-          <HeadingText type={HeadingText.TYPE.HEADING_2}>Current headings</HeadingText>
-          <Card>
-            <CardBody>
-              {current}
-            </CardBody>
-          </Card>
-          <HeadingText type={HeadingText.TYPE.HEADING_2}>Select to include for tags</HeadingText>
+          <HeadingText type={HeadingText.TYPE.HEADING_2}>Select to include for tagging</HeadingText>
           <br/>
           <Card>
             <CardBody>
