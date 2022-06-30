@@ -54,9 +54,10 @@ export default class Generate extends React.Component {
       }
 
       // find tags
-      for (const [label, value] of tags) {
-        if (this.trimLowerCase(heading) === this.trimLowerCase(value)) {
-          config.tags[label] = idx;
+      for (const item of Object.entries(tagMap)) {
+        const [key, value] = item
+        if (value.enabled && toLower === this.trimLowerCase(value.heading)) {
+          config.tags[key] = idx;
         }
       }
     }
@@ -200,25 +201,32 @@ export default class Generate extends React.Component {
   }
 
   makeMonitors(objs) {
-    const mutation = `mutation ($name: String!, $accountId: Int!, $period: SyntheticsMonitorPeriod!, $locations: [String], $uri: String!, $tags: [SyntheticsTag]) {
+    const createMonitor = `mutation ($name: String!, $accountId: Int!, $period: SyntheticsMonitorPeriod!, $locations: [String], $uri: String!) {
       syntheticsCreateSimpleBrowserMonitor(accountId: $accountId, monitor: {
         name: $name,
         status: DISABLED,
         period: $period,
         locations: {public: $locations},
         uri: $uri,
-        tags: $tags,
         runtime: {runtimeType: "CHROME_BROWSER", runtimeTypeVersion: "100", scriptLanguage: "JAVASCRIPT"}
       }) {
         errors { description }
         monitor { guid }
       }
     }`
+    const tagMonitor = `mutation ($guid: EntityGuid!, $tags: [TaggingTagInput!]!) {
+      taggingAddTagsToEntity(guid: $guid, tags: $tags) {
+        errors {
+          message
+          type
+        }
+      }
+    }`
     for (const obj of objs) {
-      console.log('Executing GraphQl mutation to create monitor', obj.name);
-      console.log(mutation);
-      console.log('Variables:', JSON.stringify(obj));
-      NerdGraphMutation.mutate({mutation: mutation, variables: obj})
+      console.log('Executing GraphQl mutations to create monitor', obj.name);
+      //console.log(createMonitor);
+      //console.log('Variables:', JSON.stringify(obj));
+      NerdGraphMutation.mutate({mutation: createMonitor, variables: obj})
         .then(result => {
           const data = result.data.syntheticsCreateSimpleBrowserMonitor;
           var messages = [];
@@ -226,11 +234,26 @@ export default class Generate extends React.Component {
             for (const error of data.errors) {
               messages.push(error.__typename + ': ' + error.description)
             }
+            obj.status = messages.join(", ");
+            this.setState({objs: objs});
           } else {
-            messages.push('Success, guid: ' + data.monitor.guid)
+            const guid = data.monitor.guid;
+            const vars = {guid: guid, tags: obj.tags}
+            messages.push('Success, guid: ' + guid)
+            //console.log(tagMonitor);
+            //console.log('Variables:', JSON.stringify(vars));
+            NerdGraphMutation.mutate({mutation: tagMonitor, variables: vars})
+              .then(result => {
+                const errors = result.data.taggingAddTagsToEntity.errors;
+                if (errors.length > 0) {
+                  for (const error of errors) {
+                    messages.push(error.__typename + ': ' + error.description)
+                  }
+                }
+                obj.status = messages.join(", ");
+                this.setState({objs: objs});
+              });
           }
-          obj.status = messages.join(", ");
-          this.setState({objs: objs});
         });
     }
   }
