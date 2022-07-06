@@ -1,7 +1,8 @@
 import React from 'react';
 import PropTypes from "prop-types";
-import {AccountStorageQuery, Button, NerdGraphMutation, Spinner} from 'nr1';
+import {AccountStorageQuery, Button, Spinner} from 'nr1';
 import locations from './locations';
+import MonitorMutate from './monitor-mutate';
 
 // Generate Synthetics monitors
 export default class Generate extends React.Component {
@@ -25,7 +26,8 @@ export default class Generate extends React.Component {
       tagMap: {},
       config: {},
       configErrors: [],
-      objs: []
+      objs: [],
+      update: false
     };
   }
 
@@ -177,15 +179,27 @@ export default class Generate extends React.Component {
     var result = {};
     AccountStorageQuery.query({accountId: accountId, collection: 'locale2locations', documentId: 'current'})
       .then(({data}) => {
-        result.locales = data;
+        if (data) {
+          result.locales = data;
+        } else {
+          result.locales = {};
+        }
         return AccountStorageQuery.query({accountId: accountId, collection: 'status2frequency', documentId: 'current'});
       })
       .then(({data}) => {
-        result.status2frequency = data;
+        if (data) {
+          result.status2frequency = data;
+        } else {
+          result.status2frequency = {};
+        }
         return AccountStorageQuery.query({accountId: accountId, collection: 'tagmap', documentId: 'current'});
       })
       .then(({data}) => {
-        result.tagMap = data;
+        if (data) {
+          result.tagMap = data;
+        } else {
+          result.tagMap = {};
+        }
         const [config, configErrors] = this.findConfiguration(headings, result.tagMap);
         // convert records to objects
         var objs = [];
@@ -193,73 +207,29 @@ export default class Generate extends React.Component {
         //console.log("Loaded:", JSON.stringify(result))
         for (const record of records.slice(1, records.length)) {
           const obj = this.makeObject(idx, record, config, result.locales, locationMap, result.status2frequency)
-            objs.push(obj);
+          objs.push(obj);
           idx++;
         }
-        this.setState({config, configErrors, tagMap: result.tagMap, objs, locales: result.locales, status2frequency: result.status2frequency});
+        this.setState({
+          config,
+          configErrors,
+          tagMap: result.tagMap,
+          objs,
+          locales: result.locales,
+          status2frequency: result.status2frequency
+        });
       });
   }
 
-  makeMonitors(objs) {
-    const createMonitor = `mutation ($name: String!, $accountId: Int!, $period: SyntheticsMonitorPeriod!, $locations: [String], $uri: String!) {
-      syntheticsCreateSimpleBrowserMonitor(accountId: $accountId, monitor: {
-        name: $name,
-        status: DISABLED,
-        period: $period,
-        locations: {public: $locations},
-        uri: $uri,
-        runtime: {runtimeType: "CHROME_BROWSER", runtimeTypeVersion: "100", scriptLanguage: "JAVASCRIPT"}
-      }) {
-        errors { description }
-        monitor { guid }
-      }
-    }`
-    const tagMonitor = `mutation ($guid: EntityGuid!, $tags: [TaggingTagInput!]!) {
-      taggingAddTagsToEntity(guid: $guid, tags: $tags) {
-        errors {
-          message
-          type
-        }
-      }
-    }`
-    for (const obj of objs) {
-      console.log('Executing GraphQl mutations to create monitor', obj.name);
-      //console.log(createMonitor);
-      //console.log('Variables:', JSON.stringify(obj));
-      NerdGraphMutation.mutate({mutation: createMonitor, variables: obj})
-        .then(result => {
-          const data = result.data.syntheticsCreateSimpleBrowserMonitor;
-          var messages = [];
-          if (data.errors.length > 0) {
-            for (const error of data.errors) {
-              messages.push(error.__typename + ': ' + error.description)
-            }
-            obj.status = messages.join(", ");
-            this.setState({objs: objs});
-          } else {
-            const guid = data.monitor.guid;
-            const vars = {guid: guid, tags: obj.tags}
-            messages.push('Success, guid: ' + guid)
-            //console.log(tagMonitor);
-            //console.log('Variables:', JSON.stringify(vars));
-            NerdGraphMutation.mutate({mutation: tagMonitor, variables: vars})
-              .then(result => {
-                const errors = result.data.taggingAddTagsToEntity.errors;
-                if (errors.length > 0) {
-                  for (const error of errors) {
-                    messages.push(error.__typename + ': ' + error.description)
-                  }
-                }
-                obj.status = messages.join(", ");
-                this.setState({objs: objs});
-              });
-          }
-        });
-    }
+  onClick() {
+    console.log('Click of the button')
+    this.setState({update: true})
   }
 
   makeTable(objs, configErrors) {
+    const {update} = this.state;
     var table = <h1>No data</h1>;
+    var calls = [];
 
     if (objs && objs.length > 0) {
       var issues = [];
@@ -278,22 +248,21 @@ export default class Generate extends React.Component {
         table = <div>
           <h1>Validated {objs.length} monitors, no issues</h1>
           <br/>
-          <Button onClick={() => this.makeMonitors(objs)}>
-            Generate Monitors
+          <Button disabled={update} onClick={() => this.onClick()}>
+            {update ? 'See Status column for results' : 'Generate Monitors'}
           </Button>
           <table>
             <tbody>
-            <tr>
-              <th>Row</th>
-              <th>Name</th>
-              <th>Status</th>
-            </tr>
-            {objs.map(row => <tr>
-                <td>{row.row}</td>
-                <td>{row.name}</td>
-                <td>{row.status}</td>
+              <tr>
+                <th>Row</th>
+                <th>Name</th>
+                <th>Status</th>
               </tr>
-            )}
+              {objs.map(obj => <tr>
+                <td>{obj.row}</td>
+                <td>{obj.name}</td>
+                <td><MonitorMutate update={update} obj={obj} /></td>
+              </tr>)}
             </tbody>
           </table>
         </div>;
@@ -302,15 +271,15 @@ export default class Generate extends React.Component {
           <h1>{issues.length} Issues Found!</h1>
           <table>
             <tbody>
-              <tr>
-                <th>Location</th>
-                <th>Description</th>
+            <tr>
+              <th>Location</th>
+              <th>Description</th>
+            </tr>
+            {issues.map(issue => <tr>
+                <td>{issue.location}</td>
+                <td>{issue.description}</td>
               </tr>
-              {issues.map(issue => <tr>
-                  <td>{issue.location}</td>
-                  <td>{issue.description}</td>
-                </tr>
-              )}
+            )}
             </tbody>
           </table>
         </div>;
