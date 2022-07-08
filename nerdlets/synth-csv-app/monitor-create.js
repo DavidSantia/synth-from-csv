@@ -2,6 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {NerdGraphQuery} from 'nr1';
 
+// Find monitor entities to see if update or generate is needed
 export default class MonitorCreate extends React.Component {
   static propTypes = {
     obj: PropTypes.object.isRequired,

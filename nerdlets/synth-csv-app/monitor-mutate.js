@@ -44,7 +44,6 @@ export default class MonitorMutate extends React.Component {
     }
   }
 
-
   makeMonitor(obj) {
     const searchMonitor = `query ($name: String!, $accountId: String!) {
       actor {

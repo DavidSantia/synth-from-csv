@@ -19,6 +19,7 @@ export default class Generate extends React.Component {
       config: {},
       configErrors: [],
       objs: [],
+      rendering: true,
       update: false
     };
   }
@@ -166,6 +167,9 @@ export default class Generate extends React.Component {
       headings = records[0];
     }
 
+    // Disable button for a second
+    setTimeout(() => this.setState({rendering: false}), 1000);
+
     // load locale map, frequency map, and tag list from NerdStorage
     var result = {};
     AccountStorageQuery.query({accountId: accountId, collection: 'locale2locations', documentId: 'current'})
@@ -218,7 +222,7 @@ export default class Generate extends React.Component {
   }
 
   makeTable(objs, configErrors) {
-    const {update} = this.state;
+    const {rendering, update} = this.state;
     var table = <h1>No data</h1>;
     var calls = [];
 
@@ -239,8 +243,8 @@ export default class Generate extends React.Component {
         table = <div>
           <h1>Validated {objs.length} monitors, no issues</h1>
           <br/>
-          <Button disabled={update} onClick={() => this.onClick()}>
-            {update ? 'See Status column for results' : 'Generate / Update Monitors'}
+          <Button disabled={update || rendering} onClick={() => this.onClick()}>
+            {rendering ? 'Loading...' : update ? 'See Status column for results' : 'Generate / Update Monitors'}
           </Button>
           <table>
             <tbody>
