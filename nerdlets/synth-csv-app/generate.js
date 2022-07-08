@@ -1,8 +1,7 @@
 import React from 'react';
 import PropTypes from "prop-types";
 import {AccountStorageQuery, Button, Spinner} from 'nr1';
-import locations from './locations';
-import MonitorMutate from './monitor-mutate';
+import MonitorCreate from './monitor-create';
 
 // Generate Synthetics monitors
 export default class Generate extends React.Component {
@@ -13,15 +12,8 @@ export default class Generate extends React.Component {
 
   constructor(props) {
     super(props)
-    var locationMap = {};
-    for (const continent of Object.keys(locations.obj)) {
-      for (const item of locations.obj[continent]) {
-        locationMap[item.label] = item.location
-      }
-    }
     this.state = {
       locales: {},
-      locationMap: locationMap,
       status2frequency: {},
       tagMap: {},
       config: {},
@@ -84,14 +76,14 @@ export default class Generate extends React.Component {
     return [config, errors];
   }
 
-  makeObject(idx, record, config, locales, locationMap, status2frequency) {
+  makeObject(idx, record, config, locales, status2frequency) {
     const {accountId} = this.props;
     var obj = {
       row: idx,
       accountId: accountId,
       period: 'UNKNOWN',
       uri: 'UNKNOWN',
-      locations: [],
+      locationLabels: [],
       name: 'UNKNOWN',
       tags: [],
       errors: [],
@@ -128,7 +120,7 @@ export default class Generate extends React.Component {
         const locs = locales[locale];
         if (locs) {
           for (const label of locs) {
-            obj.locations.push(locationMap[label])
+            obj.locationLabels.push(label)
           }
         } else {
           obj.errors.push('Locations not configured for Locale "' + locale + '" - please update Settings');
@@ -169,7 +161,6 @@ export default class Generate extends React.Component {
 
   componentDidMount() {
     const {records, accountId} = this.props;
-    const {locationMap} = this.state;
     var headings = [];
     if (records.length > 0) {
       headings = records[0];
@@ -206,7 +197,7 @@ export default class Generate extends React.Component {
         var idx = 2;
         //console.log("Loaded:", JSON.stringify(result))
         for (const record of records.slice(1, records.length)) {
-          const obj = this.makeObject(idx, record, config, result.locales, locationMap, result.status2frequency)
+          const obj = this.makeObject(idx, record, config, result.locales, result.status2frequency)
           objs.push(obj);
           idx++;
         }
@@ -249,7 +240,7 @@ export default class Generate extends React.Component {
           <h1>Validated {objs.length} monitors, no issues</h1>
           <br/>
           <Button disabled={update} onClick={() => this.onClick()}>
-            {update ? 'See Status column for results' : 'Generate Monitors'}
+            {update ? 'See Status column for results' : 'Generate / Update Monitors'}
           </Button>
           <table>
             <tbody>
@@ -261,7 +252,7 @@ export default class Generate extends React.Component {
               {objs.map(obj => <tr>
                 <td>{obj.row}</td>
                 <td>{obj.name}</td>
-                <td><MonitorMutate update={update} obj={obj} /></td>
+                <td><MonitorCreate obj={obj} /></td>
               </tr>)}
             </tbody>
           </table>
